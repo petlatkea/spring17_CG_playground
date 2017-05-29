@@ -259,79 +259,88 @@ function createEnemy( data ) {
 
     switch( data.type ) {
         case "guard":
-            enemy = new createjs.Sprite(game.sprites, "guard");
-            enemy.type = "guard"
-            enemy.w = 16;
-            enemy.h = 24;
-            enemy.x = data.grid.x*64 + data.offset.x + enemy.w/2;
-            enemy.y = data.grid.y*64 + data.offset.y + enemy.h/2;
-            enemy.speed = 1;
-            enemy.direction = "left";
-
+            enemy = new Enemy("guard");
+            enemy.setOffset(data.offset);
+            enemy.setGridPosition(data.grid.x, data.grid.y);
             break;
 
         case "chaser":
-            enemy = new createjs.Sprite(game.sprites, "chaser");
-            enemy.type="chaser";
-            enemy.w = 16;
-            enemy.h = 24;
-            enemy.x = data.grid.x*64 + data.offset.x + enemy.w/2;
-            enemy.y = data.grid.y*64 + data.offset.y + enemy.h/2;
-            enemy.speed = 1;
-            enemy.direction = "left";
+            enemy = new Enemy("chaser");
+            enemy.setOffset(data.offset);
+            enemy.setGridPosition(data.grid.x, data.grid.y);
             break;
     }
 
     return enemy;
 }
 
-function moveEnemy( enemy ) {
 
-    let dx = 0;
-    let dy =0;
+class Enemy extends createjs.Sprite {
+    constructor( spritename ) {
+        super( game.sprites, spritename);
+        this.type=spritename;
+        this.w = 16;
+        this.h = 24;
 
-    switch( enemy.direction ) {
-        case "left":
-            dx = -enemy.speed;
-            dy = 0;
-            break;
-        case "right":
-            dx = enemy.speed;
-            dy = 0;
-            break;
-        case "up":
-            dx = 0;
-            dy = -enemy.speed;
-            break;
-        case "down":
-            dx = 0;
-            dy = enemy.speed;
-            break;
+        this.speed = 1;
+        this.direction = "left";
     }
 
-    if( canMoveTo( enemy, enemy.x+dx, enemy.y+dy ) ) {
-        enemy.x += dx;
-        enemy.y += dy;
+    setOffset(offset) {
+        this.offset = offset;
+    }
 
-        // TODO: react after move ...
-    } else {
-        // can't move - if this is a guard, then change direction
-        if( enemy.type == "guard" ) {
-            if( enemy.direction == "left" ) {
-                enemy.direction = "right";
-            } else {
-                enemy.direction = "left";
-            }
-        } else if( enemy.type == "chaser") {
-            let directions = ["left", "right", "up", "down"];
-            // remove existing direction from list
-            directions.filter( dir => dir != enemy.direction);
-            // find new random direction
-            enemy.direction = directions[ Math.floor(Math.random()*directions.length)];
+    setGridPosition(gridx, gridy) {
+        this.x = gridx*64 + this.offset.x + this.w/2;
+        this.y = gridy*64 + this.offset.y + this.h/2;
+    }
+
+    move() {
+        let dx = 0;
+        let dy =0;
+
+        switch( this.direction ) {
+            case "left":
+                dx = -this.speed;
+                dy = 0;
+                break;
+            case "right":
+                dx = this.speed;
+                dy = 0;
+                break;
+            case "up":
+                dx = 0;
+                dy = -this.speed;
+                break;
+            case "down":
+                dx = 0;
+                dy = this.speed;
+                break;
         }
+
+        if( canMoveTo( this, this.x+dx, this.y+dy ) ) {
+            this.x += dx;
+            this.y += dy;
+
+            // TODO: react after move ...
+        } else {
+            // can't move - if this is a guard, then change direction
+            if( this.type == "guard" ) {
+                if( this.direction == "left" ) {
+                    this.direction = "right";
+                } else {
+                    this.direction = "left";
+                }
+            } else if( this.type == "chaser") {
+                let directions = ["left", "right", "up", "down"];
+                // remove existing direction from list
+                directions.filter( dir => dir != this.direction);
+                // find new random direction
+                this.direction = directions[ Math.floor(Math.random()*directions.length)];
+            }
+        }
+
     }
-
-
 
 }
 
@@ -543,7 +552,7 @@ function ticker( event ) {
         if( enemies ) {
             // move enemies, and test for collisions
             enemies.forEach( enemy => {
-                moveEnemy( enemy );
+                enemy.move();
 
                 // test collision with player
                 if( hitTest( enemy, player) ) {
