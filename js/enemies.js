@@ -78,20 +78,95 @@ class Enemy extends createjs.Sprite {
 class Guard extends Enemy {
     constructor() {
         super("guard");
+
+        var thisguard = this;
+
+        var WalkingRight = {
+            move: function() {
+                if( !thisguard.tryToMove() ) {
+                    // change state to waiting
+                    thisguard.currentState = WaitingRight;
+                    console.log("Transition to state WaitingRight");
+                    // turn the guard
+                    createjs.Tween.get(thisguard).to({rotation:180},200);
+                    thisguard.direction = "left";
+                }
+            }
+        }
+
+        var WaitingRight = {
+            firsttime: 0,
+            move: function() {
+                if( this.firsttime == 0) {
+                    // this is the first time!
+                    this.firsttime = Date.now();
+                } else {
+                    // we have been called before!
+
+                    // how long time has gone since firsttime
+                    if( Date.now() - this.firsttime > 700 ) {
+                        // enough time has passed - go to next state
+                        thisguard.currentState = WalkingLeft;
+                        console.log("Transition to state WalkingLeft");
+                        this.firsttime = 0;
+                    }
+                }
+            }
+        }
+
+        // --------
+
+        var WalkingLeft = {
+            move: function() {
+                if( !thisguard.tryToMove() ) {
+                    // change state to waiting
+                    thisguard.currentState = WaitingLeft;
+                    console.log("Transition to state WaitingLeft");
+                    // turn the guard
+                    createjs.Tween.get(thisguard).to({rotation:0},200);
+                    thisguard.direction = "right";
+                }
+            }
+        }
+
+        var WaitingLeft = {
+            firsttime: 0,
+            move: function() {
+                if( this.firsttime == 0) {
+                    // this is the first time!
+                    this.firsttime = Date.now();
+                } else {
+                    // we have been called before!
+
+                    // how long time has gone since firsttime
+                    if( Date.now() - this.firsttime > 700 ) {
+                        // enough time has passed - go to next state
+                        thisguard.currentState = WalkingRight;
+                        console.log("Transition to state WalkingRight");
+                        this.firsttime = 0;
+                    }
+                }
+            }
+        }
+
+
+        this.currentState = WalkingRight;
+        this.direction = "right";
+        this.rotation = 0;
+
+        // ------
+
+
+
+
+
+
     }
 
     move() {
-        if (this.tryToMove()) {
-            // moving went okay
-        } else {
-            // can't move that way
-            if (this.direction == "left") {
-                this.direction = "right";
-            } else {
-                this.direction = "left";
-            }
-        }
+        this.currentState.move();
     }
+
 }
 
 class Chaser extends Enemy {
