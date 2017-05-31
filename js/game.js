@@ -96,12 +96,14 @@ function gameLoaded() {
             "patroller": [30],
             "traveller": [31],
             "chaser": [21],
+            "chaser_searching": [21],
+            "chaser_chasing": [33,34],
             "sentry": [22],
             "key": [11],
             "shot_double": [1],
             "shot_single": [2]
         },
-        "framerate": 10
+        "framerate": 5
     });
 
 
