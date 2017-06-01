@@ -71,6 +71,41 @@ class Enemy extends createjs.Sprite {
             return false;
         }
     }
+
+    turnTowards( other ) {
+        var dx = other.x - this.x;
+        var dy = other.y - this.y;
+
+
+        if( Math.abs(dx) > Math.abs(dy) ) {
+            // move horisontally
+
+            // left or right?
+            if( dx < 0 ) {
+                this.direction = "left";
+                this.rotation = 180;
+            } else {
+                this.direction = "right";
+                this.rotation = 0;
+            }
+
+
+        } else {
+            // move vertically
+
+            // up or down?
+            if( dy < 0) {
+                this.direction = "up";
+                this.rotation = -90;
+            } else {
+                this.direction = "down";
+                this.rotation = 90;
+            }
+
+        }
+
+    }
+
 }
 
 
@@ -82,13 +117,15 @@ class Guard extends Enemy {
         var thisguard = this;
 
         var WalkingRight = {
-            move: function() {
-                if( !thisguard.tryToMove() ) {
+            move: function () {
+                if (!thisguard.tryToMove()) {
                     // change state to waiting
                     thisguard.currentState = WaitingRight;
                     console.log("Transition to state WaitingRight");
                     // turn the guard
-                    createjs.Tween.get(thisguard).to({rotation:180},200);
+                    createjs.Tween.get(thisguard).to({
+                        rotation: 180
+                    }, 200);
                     thisguard.direction = "left";
                 }
             }
@@ -96,15 +133,15 @@ class Guard extends Enemy {
 
         var WaitingRight = {
             firsttime: 0,
-            move: function() {
-                if( this.firsttime == 0) {
+            move: function () {
+                if (this.firsttime == 0) {
                     // this is the first time!
                     this.firsttime = Date.now();
                 } else {
                     // we have been called before!
 
                     // how long time has gone since firsttime
-                    if( Date.now() - this.firsttime > 700 ) {
+                    if (Date.now() - this.firsttime > 700) {
                         // enough time has passed - go to next state
                         thisguard.currentState = WalkingLeft;
                         console.log("Transition to state WalkingLeft");
@@ -117,13 +154,15 @@ class Guard extends Enemy {
         // --------
 
         var WalkingLeft = {
-            move: function() {
-                if( !thisguard.tryToMove() ) {
+            move: function () {
+                if (!thisguard.tryToMove()) {
                     // change state to waiting
                     thisguard.currentState = WaitingLeft;
                     console.log("Transition to state WaitingLeft");
                     // turn the guard
-                    createjs.Tween.get(thisguard).to({rotation:0},200);
+                    createjs.Tween.get(thisguard).to({
+                        rotation: 0
+                    }, 200);
                     thisguard.direction = "right";
                 }
             }
@@ -131,15 +170,15 @@ class Guard extends Enemy {
 
         var WaitingLeft = {
             firsttime: 0,
-            move: function() {
-                if( this.firsttime == 0) {
+            move: function () {
+                if (this.firsttime == 0) {
                     // this is the first time!
                     this.firsttime = Date.now();
                 } else {
                     // we have been called before!
 
                     // how long time has gone since firsttime
-                    if( Date.now() - this.firsttime > 700 ) {
+                    if (Date.now() - this.firsttime > 700) {
                         // enough time has passed - go to next state
                         thisguard.currentState = WalkingRight;
                         console.log("Transition to state WalkingRight");
@@ -172,18 +211,110 @@ class Guard extends Enemy {
 class Chaser extends Enemy {
     constructor() {
         super("chaser");
+
+        var thischaser = this;
+
+        var NewRandomTarget = {
+            enterState() {},
+
+            move() {
+                var xcord = Math.random()*game.stage.canvas.width;
+                var ycord = Math.random()*game.stage.canvas.height;
+
+                var target = {
+                    x: xcord,
+                    y: ycord
+                };
+
+                Searching.target = target;
+
+                // change state
+                thischaser.currentState = Searching;
+                thischaser.currentState.enterState();
+            }
+
+        }
+
+
+        var Searching = {
+
+            enterState() {
+                thischaser.gotoAndPlay("chaser_searching");
+                thischaser.speed = 1;
+            },
+
+            move() {
+                // calculate the distance to the player
+                var a = player.x - thischaser.x;
+                var b = player.y - thischaser.y;
+                var c = Math.sqrt(a * a + b * b);
+
+                if (c < 100) {
+                    thischaser.currentState = Chasing;
+                    thischaser.currentState.enterState();
+                } else {
+                    // continue searching
+
+                    // calculate distance to target
+                    var dist = Math.hypot(thischaser.x - this.target.x, thischaser.y-this.target.y);
+
+                    thischaser.turnTowards( this.target );
+
+                    // Do searching move ...
+                    if(!thischaser.tryToMove() || dist < 10) {
+                        // can't move
+                        thischaser.currentState = NewRandomTarget;
+                        thischaser.currentState.enterState();
+                    }
+
+                }
+            }
+        }
+
+        var Chasing = {
+
+            enterState() {
+                thischaser.gotoAndPlay("chaser_chasing");
+                thischaser.speed = 2;
+            },
+
+            move() {
+                // calculate the distance to the player
+                var dist = Math.hypot(thischaser.x-player.x, thischaser.y-player.y);
+
+                if( dist > 200 ){
+                    // stop chasing, and go searching
+                    thischaser.currentState = NewRandomTarget;
+                    thischaser.currentState.enterState();
+                } else {
+
+                    thischaser.turnTowards( player );
+
+                    // TODO: When the player is at 45 degreees,
+                    // the chaser will flip between horiz and vert - Figure out how to solve.
+
+                    // Do searching move ...
+                    if (thischaser.tryToMove()) {
+                        // moving went okay
+                    } else {
+                      // can't move ...
+                    }
+
+                }
+            }
+        }
+
+
+        this.currentState = NewRandomTarget;
+        this.currentState.enterState();
+
     }
 
+
+
+
+
     move() {
-        if (this.tryToMove()) {
-            // moving went okay
-        } else {
-            // can't move that way
-            let directions = ["left", "right", "up", "down"];
-            // remove existing direction from list
-            directions.filter(dir => dir != this.direction);
-            // find new random direction
-            this.direction = directions[Math.floor(Math.random() * directions.length)];
-        }
+        this.currentState.move();
     }
 }
